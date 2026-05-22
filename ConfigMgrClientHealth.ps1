@@ -389,10 +389,11 @@ Begin {
         # Handles different OS languages
         $OSArchitecture = ($OS.OSArchitecture -replace ('([^0-9])(\.*)', '')) + '-Bit'
         switch -Wildcard ($OS.Caption) {
-            "*Embedded*" {$OSName = "Windows 7 " + $OSArchitecture}
-            "*Windows 7*" {$OSName = "Windows 7 " + $OSArchitecture}
-            "*Windows 8.1*" {$OSName = "Windows 8.1 " + $OSArchitecture}
-            "*Windows 10*" {$OSName = "Windows 10 " + $OSArchitecture}
+            "*Embedded*" { $OSName = "Windows 7 " + $OSArchitecture }
+            "*Windows 7*" { $OSName = "Windows 7 " + $OSArchitecture }
+            "*Windows 8.1*" { $OSName = "Windows 8.1 " + $OSArchitecture }
+            "*Windows 11*" { $OSName = "Windows 11 " + $OSArchitecture }
+            "*Windows 10*" { $OSName = "Windows 10 " + $OSArchitecture }
             "*Server 2008*" {
                 if ($OS.Caption -like "*R2*") { $OSName = "Windows Server 2008 R2 " + $OSArchitecture }
                 else { $OSName = "Windows Server 2008 " + $OSArchitecture }
@@ -403,6 +404,8 @@ Begin {
             }
             "*Server 2016*" { $OSName = "Windows Server 2016 " + $OSArchitecture }
             "*Server 2019*" { $OSName = "Windows Server 2019 " + $OSArchitecture }
+            "*Server 2022*" { $OSName = "Windows Server 2022 " + $OSArchitecture }
+            "*Server 2025*" { $OSName = "Windows Server 2025 " + $OSArchitecture }
         }
         Write-Output $OSName
     }
@@ -412,17 +415,30 @@ Begin {
         $OSName = Get-OperatingSystem
 
         $build = $null
-        if ($OSName -like "*Windows 10*") {
+        if (($OSName -like "*Windows 10*") -or ($OSName -like "*Windows 11*")) {
             $build = Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber
             switch ($build) {
-                10240 {$OSName = $OSName + " 1507"}
-                10586 {$OSName = $OSName + " 1511"}
-                14393 {$OSName = $OSName + " 1607"}
-                15063 {$OSName = $OSName + " 1703"}
-                16299 {$OSName = $OSName + " 1709"}
-                17134 {$OSName = $OSName + " 1803"}
-                17763 {$OSName = $OSName + " 1809"}
-                default {$OSName = $OSName + " Insider Preview"}
+                # Windows 10 builds
+                10240 { $OSName = $OSName + " 1507" }
+                10586 { $OSName = $OSName + " 1511" }
+                14393 { $OSName = $OSName + " 1607" }
+                15063 { $OSName = $OSName + " 1703" }
+                16299 { $OSName = $OSName + " 1709" }
+                17134 { $OSName = $OSName + " 1803" }
+                17763 { $OSName = $OSName + " 1809" }
+                18362 { $OSName = $OSName + " 1903" }
+                18363 { $OSName = $OSName + " 1909" }
+                19041 { $OSName = $OSName + " 2004" }
+                19042 { $OSName = $OSName + " 20H2" }
+                19043 { $OSName = $OSName + " 21H1" }
+                19044 { $OSName = $OSName + " 21H2" }
+                19045 { $OSName = $OSName + " 22H2" }
+                # Windows 11 builds
+                22000 { $OSName = $OSName + " 21H2" }
+                22621 { $OSName = $OSName + " 22H2" }
+                22631 { $OSName = $OSName + " 23H2" }
+                26100 { $OSName = $OSName + " 24H2" }
+                default { $OSName = $OSName + " Insider Preview" }
             }
         }
 
@@ -857,6 +873,11 @@ Begin {
                     ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
                 } | Select-Object -ExpandProperty Date | Measure-Latest
             }
+            "*Windows 11*" {
+                $Date = $Searcher.QueryHistory(0, $HistoryCount) | Where-Object {
+                    ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
+                } | Select-Object -ExpandProperty Date | Measure-Latest
+            }
             "*Server 2008*" {
                 $Date = $Searcher.QueryHistory(0, $HistoryCount) | Where-Object {
                     ($_.ClientApplicationID -eq 'AutomaticUpdates' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
@@ -872,7 +893,22 @@ Begin {
                     ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
                 } | Select-Object -ExpandProperty Date | Measure-Latest
             }
-		}
+            "*Server 2019*" {
+                $Date = $Searcher.QueryHistory(0, $HistoryCount) | Where-Object {
+                    ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
+                } | Select-Object -ExpandProperty Date | Measure-Latest
+            }
+            "*Server 2022*" {
+                $Date = $Searcher.QueryHistory(0, $HistoryCount) | Where-Object {
+                    ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
+                } | Select-Object -ExpandProperty Date | Measure-Latest
+            }
+            "*Server 2025*" {
+                $Date = $Searcher.QueryHistory(0, $HistoryCount) | Where-Object {
+                    ($_.ClientApplicationID -eq 'UpdateOrchestrator' -or $_.ClientApplicationID -eq 'ccmexec') -and ($_.Title -notmatch "Security Intelligence Update|Definition Update")
+                } | Select-Object -ExpandProperty Date | Measure-Latest
+            }
+        }
 
         # Reading date from PowerShell Get-Hotfix
         #$now = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
@@ -1030,17 +1066,30 @@ Begin {
 
 
         $build = $null
-        if ($OSName -like "*Windows 10*") {
+        if (($OSName -like "*Windows 10*") -or ($OSName -like "*Windows 11*")) {
             $build = Get-CimInstance Win32_OperatingSystem | Select-Object -ExpandProperty BuildNumber
             switch ($build) {
-                10240 {$OSName = $OSName + " 1507"}
-                10586 {$OSName = $OSName + " 1511"}
-                14393 {$OSName = $OSName + " 1607"}
-                15063 {$OSName = $OSName + " 1703"}
-                16299 {$OSName = $OSName + " 1709"}
-                17134 {$OSName = $OSName + " 1803"}
-                17763 {$OSName = $OSName + " 1809"}
-                default {$OSName = $OSName + " Insider Preview"}
+                # Windows 10 builds
+                10240 { $OSName = $OSName + " 1507" }
+                10586 { $OSName = $OSName + " 1511" }
+                14393 { $OSName = $OSName + " 1607" }
+                15063 { $OSName = $OSName + " 1703" }
+                16299 { $OSName = $OSName + " 1709" }
+                17134 { $OSName = $OSName + " 1803" }
+                17763 { $OSName = $OSName + " 1809" }
+                18362 { $OSName = $OSName + " 1903" }
+                18363 { $OSName = $OSName + " 1909" }
+                19041 { $OSName = $OSName + " 2004" }
+                19042 { $OSName = $OSName + " 20H2" }
+                19043 { $OSName = $OSName + " 21H1" }
+                19044 { $OSName = $OSName + " 21H2" }
+                19045 { $OSName = $OSName + " 22H2" }
+                # Windows 11 builds
+                22000 { $OSName = $OSName + " 21H2" }
+                22621 { $OSName = $OSName + " 22H2" }
+                22631 { $OSName = $OSName + " 23H2" }
+                26100 { $OSName = $OSName + " 24H2" }
+                default { $OSName = $OSName + " Insider Preview" }
             }
         }
 
@@ -1445,18 +1494,77 @@ Begin {
         }
         catch { Write-Warning "GPO Cache: Failed to check the event log for policy errors." }
 
-        #If we need to repart the policy files then do so.
+        #If we need to repair the policy files then do so.
         if ($RepairReason -ne ""){
             $log.WUAHandler = "Broken ($RepairReason)"
             Write-Output "GPO Cache: Broken ($RepairReason)"
             Write-Verbose 'Deleting registry.pol and running gpupdate...'
 
-            try { if (Test-Path -Path $MachineRegistryFile) {Remove-Item $MachineRegistryFile -Force } }
+            try { if (Test-Path -Path $MachineRegistryFile) { Remove-Item $MachineRegistryFile -Force } }
             catch { Write-Warning "GPO Cache: Failed to remove the registry file ($($MachineRegistryFile))." }
-            finally { & Write-Output n | gpupdate.exe /force /target:computer | Out-Null  }
+            finally { & Write-Output n | gpupdate.exe /force /target:computer | Out-Null }
 
-            #Write-Verbose 'Sleeping for 1 minute to allow for group policy to refresh'
-            #Start-Sleep -Seconds 60
+            # Restart ccmexec service to ensure WSUS registry settings are properly restored after registry.pol recreation
+            Write-Verbose 'Restarting SMS Agent Host service to restore WSUS settings...'
+            try
+            {
+                Restart-Service -Name 'ccmexec' -Force -ErrorAction Stop
+                Write-Output "GPO Cache: Restarted ccmexec service"
+            }
+            catch { Write-Warning "GPO Cache: Failed to restart ccmexec service: $_" }
+
+            # Ensure AcceptTrustedPublisherCerts is set for 3rd party patching (PMPC, etc.)
+            Write-Verbose 'Verifying AcceptTrustedPublisherCerts registry key...'
+            $wsusRegPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate'
+            try
+            {
+                if (-not (Test-Path $wsusRegPath)) { New-Item -Path $wsusRegPath -Force | Out-Null }
+                $currentValue = Get-ItemProperty -Path $wsusRegPath -Name 'AcceptTrustedPublisherCerts' -ErrorAction SilentlyContinue
+                if ($null -eq $currentValue -or $currentValue.AcceptTrustedPublisherCerts -ne 1)
+                {
+                    Set-ItemProperty -Path $wsusRegPath -Name 'AcceptTrustedPublisherCerts' -Value 1 -Type DWord -Force
+                    Write-Output "GPO Cache: Set AcceptTrustedPublisherCerts = 1"
+                }
+                else
+                {
+                    Write-Verbose "AcceptTrustedPublisherCerts already set correctly"
+                }
+            }
+            catch { Write-Warning "GPO Cache: Failed to set AcceptTrustedPublisherCerts: $_" }
+
+            # Re-verify PMPC certificate after registry.pol repair (if enabled)
+            $PMPCCertEnabled = Get-XMLConfigRemediationPMPCCertificateEnable
+            if ($PMPCCertEnabled -like 'True')
+            {
+                Write-Verbose 'Re-verifying PMPC certificate after GPO cache repair...'
+                $certPath = Get-XMLConfigRemediationPMPCCertificatePath
+                $fix = Get-XMLConfigRemediationPMPCCertificateFix
+                if (-not [string]::IsNullOrEmpty($certPath) -and (Test-Path $certPath) -and ($fix -like 'True'))
+                {
+                    try
+                    {
+                        $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath)
+                        $thumbprint = $cert.Thumbprint
+                        
+                        # Check and import to Root if needed
+                        $rootStore = Get-ChildItem -Path "Cert:\LocalMachine\Root" -ErrorAction SilentlyContinue | Where-Object { $_.Thumbprint -eq $thumbprint }
+                        if ($null -eq $rootStore)
+                        {
+                            certutil -addstore -f "Root" $certPath 2>&1 | Out-Null
+                            Write-Output "GPO Cache: Re-imported PMPC cert to Root store"
+                        }
+                        
+                        # Check and import to TrustedPublisher if needed
+                        $trustedStore = Get-ChildItem -Path "Cert:\LocalMachine\TrustedPublisher" -ErrorAction SilentlyContinue | Where-Object { $_.Thumbprint -eq $thumbprint }
+                        if ($null -eq $trustedStore)
+                        {
+                            certutil -addstore -f "TrustedPublisher" $certPath 2>&1 | Out-Null
+                            Write-Output "GPO Cache: Re-imported PMPC cert to TrustedPublisher store"
+                        }
+                    }
+                    catch { Write-Warning "GPO Cache: Failed to re-verify PMPC certificate: $_" }
+                }
+            }
 
             Write-Verbose 'Refreshing update policy'
             Get-SCCMPolicyScanUpdateSource
@@ -1468,6 +1576,152 @@ Begin {
         else {
             $log.WUAHandler = 'OK'
             Write-Output "GPO Cache: OK"
+        }
+    }
+
+    Function Test-TrustedPublisherCerts {
+        <#
+        .SYNOPSIS
+        Ensures AcceptTrustedPublisherCerts registry key is set for 3rd party patching tools (PMPC).
+        
+        .DESCRIPTION
+        Checks and remediates the AcceptTrustedPublisherCerts registry value under
+        HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate. This key must be set to 1
+        for 3rd party update publishers like Patch My PC to function correctly.
+        #>
+        Param([Parameter(Mandatory=$true)]$Log)
+        
+        $wsusRegPath = 'HKLM:\Software\Policies\Microsoft\Windows\WindowsUpdate'
+        $keyName = 'AcceptTrustedPublisherCerts'
+        $expectedValue = 1
+        
+        try
+        {
+            $currentValue = $null
+            if (Test-Path $wsusRegPath)
+            {
+                $currentValue = (Get-ItemProperty -Path $wsusRegPath -Name $keyName -ErrorAction SilentlyContinue).$keyName
+            }
+            
+            if ($currentValue -eq $expectedValue)
+            {
+                Write-Output "Trusted Publisher Certs: OK"
+                return
+            }
+            
+            # Remediate
+            $fix = Get-XMLConfigRemediationTrustedPublisherCerts
+            if ($fix -eq 'True')
+            {
+                Write-Output "Trusted Publisher Certs: Missing or incorrect. Remediating..."
+                if (-not (Test-Path $wsusRegPath)) { New-Item -Path $wsusRegPath -Force | Out-Null }
+                Set-ItemProperty -Path $wsusRegPath -Name $keyName -Value $expectedValue -Type DWord -Force
+                Write-Output "Trusted Publisher Certs: Set AcceptTrustedPublisherCerts = 1"
+            }
+            else
+            {
+                Write-Output "Trusted Publisher Certs: Missing or incorrect (Fix disabled in config)"
+            }
+        }
+        catch
+        {
+            Write-Warning "Trusted Publisher Certs: Failed to check/remediate - $_"
+        }
+    }
+
+    Function Test-PMPCCertificate {
+        <#
+        .SYNOPSIS
+        Verifies PMPC signing certificate is installed in Root and TrustedPublisher stores.
+        
+        .DESCRIPTION
+        Checks if the Patch My PC signing certificate exists in both the Root and TrustedPublisher
+        certificate stores. If missing and Fix is enabled, imports the certificate from the
+        configured CertPath.
+        #>
+        Param([Parameter(Mandatory=$true)]$Log)
+        
+        $certPath = Get-XMLConfigRemediationPMPCCertificatePath
+        $fix = Get-XMLConfigRemediationPMPCCertificateFix
+        
+        if ([string]::IsNullOrEmpty($certPath))
+        {
+            Write-Warning "PMPC Certificate: CertPath not configured in config.xml"
+            return
+        }
+        
+        if (-not (Test-Path $certPath))
+        {
+            Write-Warning "PMPC Certificate: Certificate file not found at $certPath"
+            return
+        }
+        
+        try
+        {
+            # Load the certificate to get its thumbprint
+            $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($certPath)
+            $thumbprint = $cert.Thumbprint
+            $certSubject = $cert.Subject
+            
+            # Check Root store
+            $rootStore = Get-ChildItem -Path "Cert:\LocalMachine\Root" -ErrorAction SilentlyContinue | Where-Object { $_.Thumbprint -eq $thumbprint }
+            $rootOK = $null -ne $rootStore
+            
+            # Check TrustedPublisher store
+            $trustedStore = Get-ChildItem -Path "Cert:\LocalMachine\TrustedPublisher" -ErrorAction SilentlyContinue | Where-Object { $_.Thumbprint -eq $thumbprint }
+            $trustedOK = $null -ne $trustedStore
+            
+            if ($rootOK -and $trustedOK)
+            {
+                Write-Output "PMPC Certificate: OK (found in Root and TrustedPublisher)"
+                return
+            }
+            
+            # Need to remediate
+            $missing = @()
+            if (-not $rootOK) { $missing += "Root" }
+            if (-not $trustedOK) { $missing += "TrustedPublisher" }
+            $missingStores = $missing -join ", "
+            
+            if ($fix -ne 'True')
+            {
+                Write-Output "PMPC Certificate: Missing from $missingStores (Fix disabled in config)"
+                return
+            }
+            
+            Write-Output "PMPC Certificate: Missing from $missingStores. Importing..."
+            
+            # Import to Root store if needed
+            if (-not $rootOK)
+            {
+                $result = certutil -addstore -f "Root" $certPath 2>&1
+                if ($LASTEXITCODE -eq 0)
+                {
+                    Write-Output "PMPC Certificate: Imported to Root store"
+                }
+                else
+                {
+                    Write-Warning "PMPC Certificate: Failed to import to Root store - $result"
+                }
+            }
+            
+            # Import to TrustedPublisher store if needed
+            if (-not $trustedOK)
+            {
+                $result = certutil -addstore -f "TrustedPublisher" $certPath 2>&1
+                if ($LASTEXITCODE -eq 0)
+                {
+                    Write-Output "PMPC Certificate: Imported to TrustedPublisher store"
+                }
+                else
+                {
+                    Write-Warning "PMPC Certificate: Failed to import to TrustedPublisher store - $result"
+                }
+            }
+        }
+        catch
+        {
+            Write-Warning "PMPC Certificate: Failed to check/remediate - $_"
         }
     }
 
@@ -1883,7 +2137,7 @@ Begin {
         }
         elseif ($StartupType -like "Automatic (Delayed Start)") {
             # Handle Automatic Trigger Start the dirty way for these two services. Implement in a nice way in future version.
-            if ( (($name -eq "wuauserv") -or ($name -eq "W32Time")) -and (($OSName -like "Windows 10*") -or ($OSName -like "*Server 2016*")) ) {
+            if ( (($name -eq "wuauserv") -or ($name -eq "W32Time")) -and (($OSName -like "Windows 10*") -or ($OSName -like "Windows 11*") -or ($OSName -like "*Server 2016*") -or ($OSName -like "*Server 2019*") -or ($OSName -like "*Server 2022*") -or ($OSName -like "*Server 2025*")) ) {
                 if ($service.StartType -ne "Automatic") {
                     $text = "Configuring service $Name StartupType to: Automatic (Trigger Start)..."
                     Set-Service -Name $service.Name -StartupType Automatic
@@ -2884,6 +3138,34 @@ Begin {
         Write-Output $obj
     }
 
+    Function Get-XMLConfigRemediationTrustedPublisherCerts {
+        if ($config) {
+            $obj = $Xml.Configuration.Remediation | Where-Object {$_.Name -like 'TrustedPublisherCerts'} | Select-Object -ExpandProperty 'Fix'
+        }
+        Write-Output $obj
+    }
+
+    Function Get-XMLConfigRemediationPMPCCertificateEnable {
+        if ($config) {
+            $obj = $Xml.Configuration.Remediation | Where-Object {$_.Name -like 'PMPCCertificate'} | Select-Object -ExpandProperty 'Enable'
+        }
+        Write-Output $obj
+    }
+
+    Function Get-XMLConfigRemediationPMPCCertificateFix {
+        if ($config) {
+            $obj = $Xml.Configuration.Remediation | Where-Object {$_.Name -like 'PMPCCertificate'} | Select-Object -ExpandProperty 'Fix'
+        }
+        Write-Output $obj
+    }
+
+    Function Get-XMLConfigRemediationPMPCCertificatePath {
+        if ($config) {
+            $obj = $Xml.Configuration.Remediation | Where-Object {$_.Name -like 'PMPCCertificate'} | Select-Object -ExpandProperty 'CertPath'
+        }
+        Write-Output $obj
+    }
+
     Function Get-XMLConfigSQLServer {
         $obj = $Xml.Configuration.Log | Where-Object {$_.Name -like 'SQL'} | Select-Object -ExpandProperty 'Server'
         Write-Output $obj
@@ -3385,9 +3667,21 @@ Process {
 		Write-Verbose 'Validating Windows Update Scan not broken by bad group policy...'
         $days = Get-XMLConfigRemediationClientWUAHandlerDays
         Test-RegistryPol -Days $days -log $log -StartTime $LastRun
-
     }
 
+    # Check AcceptTrustedPublisherCerts for 3rd party patching (PMPC)
+    $TrustedPublisherCerts = Get-XMLConfigRemediationTrustedPublisherCerts
+    if ($TrustedPublisherCerts -like 'True') {
+        Write-Verbose 'Validating AcceptTrustedPublisherCerts registry key for 3rd party patching...'
+        Test-TrustedPublisherCerts -log $log
+    }
+
+    # Check PMPC signing certificate is installed
+    $PMPCCertEnabled = Get-XMLConfigRemediationPMPCCertificateEnable
+    if ($PMPCCertEnabled -like 'True') {
+        Write-Verbose 'Validating PMPC signing certificate is installed...'
+        Test-PMPCCertificate -log $log
+    }
 
     if (($ClientStateMessages -like 'True') -eq $true) {
         Write-Verbose 'Validating that CCMClient is sending state messages...'

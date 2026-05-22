@@ -1,31 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Configuration>
-	<LocalFiles>C:\ClientHealth</LocalFiles> <!-- Path locally on computer for temporary files and local clienthealth.log if LocalLogFile="True" -->
-	<Client Name="Version">5.00.9012.1010</Client>
-	<Client Name="SiteCode">AR1</Client>
-	<Client Name="Domain">andersrodland.com</Client>
+	<LocalFiles>C:\kworking\ClientHealth</LocalFiles> <!-- Path locally on computer for temporary files and local clienthealth.log if LocalLogFile="True" -->
+	<Client Name="Version">5.0.9141.1010</Client>
+	<Client Name="SiteCode">LAX</Client>
+	<Client Name="Domain">corp.kwiktrip.com</Client>
 	<Client Name="AutoUpgrade">True</Client>
-	<Client Name="Share">\\MEMCM01.andersrodland.com\Clienthealth$\Client</Client>
-	<Client Name="CacheSize" Value="16384" DeleteOrphanedData="True" Enable="True" />
-	<Client Name="Log" MaxLogSize="4096" MaxLogHistory="2" Enable="True" />
-	<ClientInstallProperty>SMSSITECODE=AR1</ClientInstallProperty>
-	<ClientInstallProperty>MP=MEMCM01.andersrodland.com</ClientInstallProperty>
-	<ClientInstallProperty>FSP=MEMCM01.andersrodland.com</ClientInstallProperty>
-	<ClientInstallProperty>DNSSUFFIX=andersrodland.com</ClientInstallProperty>
-	<ClientInstallProperty>/Source:\\MEMCM01.andersrodland.com\Clienthealth$\client</ClientInstallProperty>
-	<ClientInstallProperty>/MP:MEMCM01.andersrodland.com</ClientInstallProperty>
-	<ClientInstallProperty>/skipprereq:silverlight.exe</ClientInstallProperty>
-	<Log Name="File" Share="\\MEMCM01.andersrodland.com\ClientHealthLogs$" Level="Full" MaxLogHistory="8" LocalLogFile="True" Enable="True" /> <!-- Level: Full = everything. ClientInstall = only if installation of sccm agent fails.  -->
-	<Log Name="SQL" Server="MEMCM01.andersrodland.com" Enable="True" />
+	<Client Name="Share">\\sccmprd01\sources\ClientHealth\client</Client>
+	<Client Name="CacheSize" Value="20480" DeleteOrphanedData="True" Enable="True" />
+	<Client Name="Log" MaxLogSize="4096" MaxLogHistory="1" Enable="True" />
+	<ClientInstallProperty>/mp:http://sccmprd01.corp.kwiktrip.com</ClientInstallProperty>
+	<ClientInstallProperty>/Source:\\sccmprd01\sources\ClientHealth\client</ClientInstallProperty>
+	<ClientInstallProperty>SMSSITECODE=LAX</ClientInstallProperty>
+	<ClientInstallProperty>SMSMP=sccmprd01.corp.kwiktrip.com</ClientInstallProperty>
+	<ClientInstallProperty>DNSSUFFIX=corp.kwiktrip.com</ClientInstallProperty>
+	<Log Name="File" Share="\\sccmprd01.corp.kwiktrip.com\sources\ClientHealth\Logs" Level="Full" MaxLogHistory="8" LocalLogFile="True" Enable="True" /> <!-- Level: Full = everything. ClientInstall = only if installation of sccm agent fails.  -->
+	<Log Name="SQL" Server="" Enable="False" />
 	<Log Name="Time" Format="ClientLocal" /> <!-- Valid formats: ClientLocal / UTC  -->
 	<Option Name="CcmSQLCELog" Enable="False" /> <!-- Optional check on the ConfigMgr agent if local database is corrupt -->
 	<Option Name="BITSCheck" Fix="True" Enable="True" />
 	<Option Name="ClientSettingsCheck" Fix="True" Enable="True" />
 	<Option Name="DNSCheck" Fix="True" Enable="True" />
 	<Option Name="Drivers" Enable="True" />
-	<Option Name="Updates" Share="\\MEMCM01.andersrodland.com\ClientHealth$\Updates" Fix="True" Enable="False" />
-	<Option Name="PendingReboot" StartRebootApplication="False" Enable="True" />
-	<Option Name="RebootApplication" Application="\\MEMCM01.andersrodland.com\ClientHealth$\RebootApp\shutdowntool.exe /t:7200 /m:1440" Enable="False" />
+	<Option Name="Updates" Share="" Fix="True" Enable="False" />
+	<Option Name="PendingReboot" StartRebootApplication="True" Enable="True" />
+	<Option Name="RebootApplication" Application="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \\sccmprd01\sources\ClientHealth\script\Invoke-CMClientReboot.ps1" Enable="True" />
 	<Option Name="MaxRebootDays" Days="7" Enable="True" />
 	<Option Name="OSDiskFreeSpace">10</Option>
 	<Option Name="HardwareInventory" Days="10" Fix="True" Enable="True" />
@@ -39,9 +37,11 @@
 	<Service Name="RpcSs" StartupType="Automatic" State="Running" Uptime=""/>
 	<Service Name="W32Time" StartupType="Automatic" State="Running" Uptime=""/>
 	<Service Name="ccmexec" StartupType="Automatic (Delayed Start)" State="Running" Uptime="" />
-	<Remediation Name="AdminShare" Fix="True" />
+	<Remediation Name="AdminShare" Fix="False" />
 	<Remediation Name="ClientProvisioningMode" Fix="True" />
 	<Remediation Name="ClientStateMessages" Fix="True" />
-	<Remediation Name="ClientWUAHandler" Fix="True"  Days="30"/>
+	<Remediation Name="ClientWUAHandler" Fix="True" Days="30"/>
 	<Remediation Name="ClientCertificate" Fix="True" />
+	<Remediation Name="TrustedPublisherCerts" Fix="True" /> <!-- Ensures AcceptTrustedPublisherCerts registry key is set for 3rd party patching (PMPC) -->
+	<Remediation Name="PMPCCertificate" Fix="True" Enable="True" CertPath="\\sccmprd01\sources\Packages\PMPCCert\PMPC.cer" /> <!-- Imports PMPC signing cert to Root and TrustedPublisher stores -->
 </Configuration>
